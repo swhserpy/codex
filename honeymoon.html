@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蜜月行程 · 2025</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --rose: #e8a0b4;
+    --rose-dark: #c47088;
+    --rose-light: #f5d6e0;
+    --gold: #d4a95a;
+    --gold-light: #f0dba0;
+    --cream: #fdf8f0;
+    --sand: #f5eee6;
+    --brown: #5a3e36;
+    --brown-light: #8b6f5e;
+    --teal: #4a9e9e;
+    --teal-light: #7fc9c9;
+    --text: #2d1f1a;
+    --text-muted: #8b6f5e;
+    --success: #7bb87b;
+    --danger: #d47474;
+    --card-bg: #ffffff;
+    --shadow: 0 2px 20px rgba(90,62,54,0.08);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', system-ui, sans-serif;
+    background: var(--sand);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .hero {
+    background: linear-gradient(135deg, #2d1f1a 0%, #5a3e36 40%, #c47088 100%);
+    padding: 60px 24px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 30%, rgba(212,169,90,0.15) 0%, transparent 60%),
+                radial-gradient(circle at 80% 70%, rgba(232,160,180,0.15) 0%, transparent 50%);
+  }
+  .hero-content { position: relative; z-index: 1; }
+  .hero-icon { font-size: 36px; color: var(--gold); margin-bottom: 12px; }
+  .hero h1 { font-size: 28px; font-weight: 700; color: var(--cream); letter-spacing: 2px; margin-bottom: 6px; }
+  .hero-sub { font-size: 14px; color: var(--gold-light); letter-spacing: 1px; }
+  .hero-dates { display: flex; justify-content: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .hero-date { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 16px; font-size: 12px; color: var(--gold-light); }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 32px 20px 80px; }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 40px; }
+  .stat { background: var(--card-bg); border-radius: 12px; padding: 16px 20px; text-align: center; box-shadow: var(--shadow); }
+  .stat-value { font-size: 22px; font-weight: 700; color: var(--rose-dark); }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .day { position: relative; margin-bottom: 28px; }
+  .day-header {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card-bg); border-radius: 14px; padding: 18px 22px;
+    box-shadow: var(--shadow); cursor: default;
+    border-left: 4px solid var(--rose);
+    position: relative;
+  }
+  .day-number { font-size: 13px; font-weight: 600; color: var(--rose-dark); min-width: 24px; }
+  .day-date-group { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; flex: 1; }
+  .day-date { font-size: 16px; font-weight: 700; color: var(--text); }
+  .day-title { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+  .day-tag {
+    font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 10px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .tag-flight { background: #dbeafe; color: #2563eb; }
+  .tag-hotel { background: #fce7f3; color: #db2777; }
+  .tag-food { background: #fef3c7; color: #d97706; }
+  .tag-play { background: #d1fae5; color: #059669; }
+  .tag-other { background: #f3e8ff; color: #7c3aed; }
+
+  .day-body { display: none; margin-top: 8px; padding: 0 4px; }
+  .day-body.open { display: block; }
+  .day-header.clickable { cursor: pointer; }
+  .day-header.clickable:hover { border-left-color: var(--gold); }
+
+  .item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: var(--card-bg); border-radius: 10px; margin-top: 8px; box-shadow: 0 1px 6px rgba(90,62,54,0.06); }
+  .item-icon { width: 20px; text-align: center; font-size: 14px; color: var(--text-muted); margin-top: 1px; flex-shrink: 0; }
+  .item-icon.flight { color: #2563eb; }
+  .item-icon.hotel { color: #db2777; }
+  .item-icon.food { color: #d97706; }
+  .item-icon.play { color: #059669; }
+  .item-icon.info { color: #7c3aed; }
+  .item-content { flex: 1; min-width: 0; }
+  .item-main { font-size: 14px; line-height: 1.5; }
+  .item-main strong { font-weight: 600; }
+  .item-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .item-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 8px;
+    margin-left: 6px;
+  }
+  .badge-done { background: #dcfce7; color: #16a34a; }
+  .badge-pending { background: #fef3c7; color: #d97706; }
+  .badge-todo { background: #fee2e2; color: #dc2626; }
+  .item-time { font-size: 12px; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .toggle-hint { font-size: 11px; color: var(--text-muted); text-align: center; margin: 4px 0 -4px; display: none; }
+  .day-header.clickable + .toggle-hint { display: block; }
+
+  .footer { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; }
+  .footer i { color: var(--rose); }
+
+  @media (max-width: 600px) {
+    .hero { padding: 40px 16px 32px; }
+    .hero h1 { font-size: 22px; }
+    .day-header { padding: 14px 16px; flex-wrap: wrap; }
+    .day-date-group { width: 100%; }
+    .summary { grid-template-columns: 1fr 1fr; }
+    .item { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-icon">✈</div>
+    <h1>蜜月旅行</h1>
+    <div class="hero-sub">Shanghai · Kuala Lumpur · Bali · Surabaya · Singapore</div>
+    <div class="hero-dates">
+      <span class="hero-date">Jun 16</span>
+      <span class="hero-date">→</span>
+      <span class="hero-date">Jun 25</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="summary">
+  <div class="stat"><div class="stat-value">10</div><div class="stat-label">天数</div></div>
+  <div class="stat"><div class="stat-value">5</div><div class="stat-label">城市</div></div>
+  <div class="stat"><div class="stat-value">5</div><div class="stat-label">航班</div></div>
+  <div class="stat"><div class="stat-value">7</div><div class="stat-label">酒店</div></div>
+</div>
+
+<!-- Day 1 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D1</span>
+    <div class="day-date-group">
+      <span class="day-date">6.16</span>
+      <span class="day-title">上海 → 吉隆坡</span>
+    </div>
+    <span class="day-tag tag-flight">飞行日</span>
+  </div>
+  <div class="day-body open" id="day1">
+    <div class="item">
+      <div class="item-icon flight"><i class="fas fa-plane"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>上海 → 吉隆坡</strong></div>
+        <div class="item-sub">11:45 – 17:25</div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon hotel"><i class="fas fa-hotel"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>Platinum 2</strong></div>
+        <div class="item-sub">吉隆坡住宿</div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon food"><i class="fas fa-utensils"></i></div>
+      <div class="item-content">
+        <div class="item-main">肉骨茶 · 榴莲 · <strong>华阳餐食</strong></div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-camera"></i></div>
+      <div class="item-content">
+        <div class="item-main">双子塔 · 粉红清真寺</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Day 2 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D2</span>
+    <div class="day-date-group">
+      <span class="day-date">6.17</span>
+      <span class="day-title">吉隆坡 → 巴厘岛</span>
+    </div>
+    <span class="day-tag tag-flight">飞行日</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon flight"><i class="fas fa-plane"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>吉隆坡 → 巴厘岛</strong></div>
+        <div class="item-sub">16:30 – 19:40</div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon hotel"><i class="fas fa-hotel"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>Tribe 酒店</strong><span style="color:var(--text-muted);font-size:12px;margin-left:4px">库塔</span></div>
+        <div class="item-sub">巴厘岛首晚住宿</div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon food"><i class="fas fa-utensils"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>Naughty Nuri's Warung Seminyak</strong> 猪肋排</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-spa"></i></div>
+      <div class="item-content">
+        <div class="item-main">马杀鸡 · <strong>Bintang 超市</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Day 3 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D3</span>
+    <div class="day-date-group">
+      <span class="day-date">6.18</span>
+      <span class="day-title">巴厘岛 · 努沙杜瓦</span>
+    </div>
+    <span class="day-tag tag-play">度假</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon hotel"><i class="fas fa-hotel"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>希尔顿酒店</strong><span style="color:var(--text-muted);font-size:12px;margin-left:4px">努沙杜瓦</span></div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-spa"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>Lily Treatment</strong> · Spa 接送</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-water"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>网红 30m 大滑梯</strong> · 酒店体验</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Day 4 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D4</span>
+    <div class="day-date-group">
+      <span class="day-date">6.19</span>
+      <span class="day-title">巴厘岛 · 努沙杜瓦</span>
+    </div>
+    <span class="day-tag tag-play">自由日</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon hotel"><i class="fas fa-hotel"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>希尔顿酒店</strong><span style="color:var(--text-muted);font-size:12px;margin-left:4px">努沙杜瓦</span></div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon info"><i class="fas fa-sun"></i></div>
+      <div class="item-content">
+        <div class="item-main">自由安排 · 享受度假村</div>
+        <div class="item-sub">海滩 · 泳池 · 滑梯 · 放松</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Day 5 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D5</span>
+    <div class="day-date-group">
+      <span class="day-date">6.20</span>
+      <span class="day-title">巴厘岛 · 乌鲁瓦图</span>
+    </div>
+    <span class="day-tag tag-play">冒险日</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon hotel"><i class="fas fa-hotel"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>乌鲁瓦图住宿</strong></div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-parachute-box"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>乌鲁瓦图 Timbis 滑翔伞</strong></div>
+        <div class="item-sub">需提前预约</div>
+      </div>
+      <span class="item-badge badge-todo">❌ 未预约</span>
+    </div>
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-mountain-sun"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>情人崖日落</strong> · 乌鲁瓦图寺</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Day 6 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D6</span>
+    <div class="day-date-group">
+      <span class="day-date">6.21</span>
+      <span class="day-title">巴厘岛 · 乌布</span>
+    </div>
+    <span class="day-tag tag-play">自然日</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon hotel"><i class="fas fa-hotel"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>一室酒店</strong><span style="color:var(--text-muted);font-size:12px;margin-left:4px">乌布</span></div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-water"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>洞穴瀑布</strong> · 乌布周边</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Day 7 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D7</span>
+    <div class="day-date-group">
+      <span class="day-date">6.22</span>
+      <span class="day-title">乌布 → 泗水 · Bromo</span>
+    </div>
+    <span class="day-tag tag-flight">转场日</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon info"><i class="fas fa-spa"></i></div>
+      <div class="item-content">
+        <div class="item-main">乌布体验：<strong>瑜伽 · Spa</strong></div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-icon flight"><i class="fas fa-plane"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>巴厘岛 → 泗水</strong></div>
+        <div class="item-sub">20:30 起飞</div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-mountain"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>Bromo 火山一日游</strong> · 凌晨出发</div>
+        <div class="item-sub">23:00 开始爬山 · 不用住酒店</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Day 8 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D8</span>
+    <div class="day-date-group">
+      <span class="day-date">6.23</span>
+      <span class="day-title">Bromo → 泗水</span>
+    </div>
+    <span class="day-tag tag-hotel">休息日</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon play"><i class="fas fa-mountain-sun"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>Bromo 火山</strong> 下山</div>
+        <div class="item-sub">14:00 返回 · 休息</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-icon hotel"><i class="fas fa-hotel"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>泗水住宿</strong></div>
+      </div>
+      <span class="item-badge badge-todo">❌ 未订</span>
+    </div>
+  </div>
+</div>
+
+<!-- Day 9 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D9</span>
+    <div class="day-date-group">
+      <span class="day-date">6.24</span>
+      <span class="day-title">泗水 → 新加坡</span>
+    </div>
+    <span class="day-tag tag-flight">转机日</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon flight"><i class="fas fa-plane"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>泗水 → 新加坡</strong></div>
+        <div class="item-sub">19:50 – 23:15</div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item">
+      <div class="item-icon hotel"><i class="fas fa-hotel"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>新加坡住宿</strong></div>
+      </div>
+      <span class="item-badge badge-todo">❌ 未订</span>
+    </div>
+  </div>
+</div>
+
+<!-- Day 10 -->
+<div class="day">
+  <div class="day-header clickable" onclick="toggleDay(this)">
+    <span class="day-number">D10</span>
+    <div class="day-date-group">
+      <span class="day-date">6.25</span>
+      <span class="day-title">新加坡 → 杭州</span>
+    </div>
+    <span class="day-tag tag-flight">回程</span>
+  </div>
+  <div class="day-body open">
+    <div class="item">
+      <div class="item-icon flight"><i class="fas fa-plane"></i></div>
+      <div class="item-content">
+        <div class="item-main"><strong>新加坡 → 杭州</strong></div>
+        <div class="item-sub">16:30 – 21:45</div>
+      </div>
+      <span class="item-badge badge-done">✅</span>
+    </div>
+    <div class="item" style="background: linear-gradient(135deg, #fdf8f0, #f5d6e0)">
+      <div class="item-icon" style="color:var(--rose-dark)"><i class="fas fa-heart"></i></div>
+      <div class="item-content">
+        <div class="item-main" style="font-weight:600;color:var(--rose-dark)">到家啦 🏠 新婚快乐！</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <i class="fas fa-heart"></i> 蜜月快乐 <i class="fas fa-heart"></i>
+</div>
+
+</div>
+
+<script>
+function toggleDay(el) {
+  const body = el.nextElementSibling;
+  if (body && body.classList.contains('day-body')) {
+    body.classList.toggle('open');
+  }
+}
+</script>
+
+</body>
+</html>

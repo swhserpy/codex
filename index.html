@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',system-ui,sans-serif; background: #0d1117; color: #c9d1d9; }
+  
+  /* Nav */
+  .nav { background: #161b22; border-bottom: 1px solid #30363d; display: flex; align-items: center; padding: 0 24px; position: sticky; top: 0; z-index: 100; }
+  .nav-brand { font-size: 15px; font-weight: 600; color: #c9d1d9; padding: 14px 0; margin-right: 28px; letter-spacing: -0.3px; }
+  .nav-tabs { display: flex; gap: 0; }
+  .nav-tab { padding: 14px 20px; font-size: 13px; font-weight: 500; color: #8b949e; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; user-select: none; }
+  .nav-tab:hover { color: #c9d1d9; }
+  .nav-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ===== DeepSeek Tab ===== */
+  :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #c9d1d9; --text-s: #8b949e; --accent: #58a6ff; --green: #3fb950; --orange: #d2991d; --red: #f85149; --radius: 8px; }
+  .ds-app { max-width: 1000px; margin: 0 auto; padding: 28px 24px; }
+  .ds-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .ds-header h2 { font-size: 18px; font-weight: 600; }
+  .ds-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-s); }
+  .ds-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .ds-dot.ok { background: var(--green); }
+  .ds-dot.err { background: var(--red); }
+  .ds-dot.loading { background: var(--orange); animation: pulse 0.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  .balance-card { background: linear-gradient(135deg,var(--surface) 0%,#1a2330 100%); border:1px solid var(--border); border-radius:var(--radius); padding:24px 28px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+  .balance-left { display:flex; flex-direction:column; gap:4px; }
+  .balance-label { font-size:11px; font-weight:500; color:var(--text-s); text-transform:uppercase; letter-spacing:0.4px; }
+  .balance-value { font-size:32px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .balance-value.green { color:var(--green); }
+  .balance-value.orange { color:var(--orange); }
+  .balance-breakdown { font-size:13px; color:var(--text-s); }
+
+  .models-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-bottom:24px; }
+  .model-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+  .model-name { font-size:13px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .model-badge { font-size:10px; font-weight:500; padding:2px 8px; border-radius:10px; background:var(--accent); color:#fff; }
+  .model-stat { display:flex; justify-content:space-between; padding:3px 0; font-size:13px; border-bottom:1px solid rgba(48,54,61,0.4); }
+  .model-stat:last-child { border-bottom:none; }
+  .model-stat-label { color:var(--text-s); }
+  .model-stat-value { font-weight:600; font-variant-numeric:tabular-nums; }
+  .model-stat-value.accent { color:var(--accent); }
+  .model-stat-value.green { color:var(--green); }
+  .model-empty { color:var(--text-s); font-size:13px; padding:20px 0; text-align:center; }
+
+  .ds-section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; }
+  .ds-section-title { font-size:14px; font-weight:600; margin-bottom:14px; }
+  .ds-chart { height:240px; }
+  .ds-note { font-size:12px; color:var(--text-s); margin-top:10px; text-align:center; }
+  .ds-error { padding:10px 14px; background:rgba(248,81,73,0.1); border:1px solid var(--red); border-radius:6px; color:var(--red); font-size:13px; margin-bottom:16px; display:none; }
+
+  @media(max-width:640px) {
+    .ds-app { padding:16px; }
+    .balance-value { font-size:26px; }
+    .models-grid { grid-template-columns:1fr; }
+    .ds-chart { height:180px; }
+  }
+
+  /* ===== Honeymoon Tab ===== */
+  .hm-hidden { display: none; }
+  #tab-honeymoon {
+    --rose: #e8a0b4; --rose-dark: #c47088; --rose-light: #f5d6e0;
+    --gold: #d4a95a; --gold-light: #f0dba0;
+    --cream: #fdf8f0; --sand: #f5eee6;
+    --brown: #5a3e36; --brown-light: #8b6f5e;
+    --teal: #4a9e9e; --teal-light: #7fc9c9;
+    --h-text: #2d1f1a; --h-text-muted: #8b6f5e;
+    --h-success: #7bb87b; --h-danger: #d47474;
+    --h-card: #ffffff; --h-shadow: 0 2px 20px rgba(90,62,54,0.08);
+  }
+  #tab-honeymoon { background: var(--sand); color: var(--h-text); min-height: 100vh; }
+  .hm-hero { background: linear-gradient(135deg,#2d1f1a 0%,#5a3e36 40%,#c47088 100%); padding:48px 24px 36px; text-align:center; position:relative; overflow:hidden; }
+  .hm-hero::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 20% 30%,rgba(212,169,90,0.15) 0%,transparent 60%),radial-gradient(circle at 80% 70%,rgba(232,160,180,0.15) 0%,transparent 50%); }
+  .hm-hero-content { position:relative; z-index:1; }
+  .hm-hero-icon { font-size:30px; color:var(--gold); margin-bottom:10px; }
+  .hm-hero h2 { font-size:24px; font-weight:700; color:var(--cream); letter-spacing:2px; margin-bottom:4px; }
+  .hm-hero-sub { font-size:13px; color:var(--gold-light); letter-spacing:1px; }
+  .hm-hero-dates { display:flex; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .hm-hero-date { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:4px 14px; font-size:11px; color:var(--gold-light); }
+  .hm-container { max-width:760px; margin:0 auto; padding:28px 20px 60px; }
+  .hm-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:32px; }
+  .hm-stat { background:var(--h-card); border-radius:12px; padding:14px 16px; text-align:center; box-shadow:var(--h-shadow); }
+  .hm-stat-value { font-size:20px; font-weight:700; color:var(--rose-dark); }
+  .hm-stat-label { font-size:10px; color:var(--h-text-muted); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
+  .hm-day { margin-bottom:24px; }
+  .hm-day-header { display:flex; align-items:center; gap:10px; background:var(--h-card); border-radius:12px; padding:14px 18px; box-shadow:var(--h-shadow); border-left:4px solid var(--rose); cursor:pointer; }
+  .hm-day-number { font-size:12px; font-weight:600; color:var(--rose-dark); min-width:20px; }
+  .hm-day-date-group { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; flex:1; }
+  .hm-day-date { font-size:15px; font-weight:700; color:var(--h-text); }
+  .hm-day-title { font-size:13px; color:var(--h-text-muted); font-weight:500; }
+  .hm-day-tag { font-size:9px; font-weight:600; padding:2px 8px; border-radius:10px; text-transform:uppercase; letter-spacing:0.3px; }
+  .hm-tag-flight { background:#dbeafe; color:#2563eb; }
+  .hm-tag-hotel { background:#fce7f3; color:#db2777; }
+  .hm-tag-food { background:#fef3c7; color:#d97706; }
+  .hm-tag-play { background:#d1fae5; color:#059669; }
+  .hm-tag-other { background:#f3e8ff; color:#7c3aed; }
+  .hm-day-body { margin-top:6px; padding:0 2px; }
+  .hm-item { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; background:var(--h-card); border-radius:8px; margin-top:6px; box-shadow:0 1px 6px rgba(90,62,54,0.06); }
+  .hm-item-icon { width:18px; text-align:center; font-size:13px; color:var(--h-text-muted); margin-top:1px; flex-shrink:0; }
+  .hm-item-icon.flight { color:#2563eb; }
+  .hm-item-icon.hotel { color:#db2777; }
+  .hm-item-icon.food { color:#d97706; }
+  .hm-item-icon.play { color:#059669; }
+  .hm-item-icon.info { color:#7c3aed; }
+  .hm-item-content { flex:1; min-width:0; }
+  .hm-item-main { font-size:13px; line-height:1.5; }
+  .hm-item-main strong { font-weight:600; }
+  .hm-item-sub { font-size:11px; color:var(--h-text-muted); margin-top:2px; }
+
+  .hm-item { position: relative; }
+  .hm-item-checkbox {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--rose-dark);
+    background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; font-size: 10px; color: transparent; user-select: none;
+  }
+  .hm-item-checkbox:hover { background: var(--rose-light); }
+  .hm-item-checkbox.checked { background: var(--rose-dark); border-color: var(--rose-dark); color: #fff; }
+  .hm-item.completed .hm-item-main { text-decoration: line-through; color: var(--h-text-muted); }
+  .hm-item.completed .hm-item-sub { display: none; }
+  .hm-item-main[contenteditable="true"] { outline: none; background: rgba(212,169,90,0.1); border-radius: 4px; padding: 0 4px; }
+  .hm-item-edit-btn { font-size: 10px; color: var(--h-text-muted); cursor: pointer; opacity: 0; transition: opacity 0.15s; margin-left: 6px; vertical-align: middle; }
+  .hm-item:hover .hm-item-edit-btn { opacity: 1; }
+  .hm-save-note { font-size: 11px; color: var(--h-text-muted); text-align: center; margin: 12px 0; }
+  .hm-badge { display:inline-flex; align-items:center; gap:2px; font-size:10px; font-weight:500; padding:2px 7px; border-radius:7px; margin-left:5px; }
+  .hm-badge-done { background:#dcfce7; color:#16a34a; }
+  .hm-badge-pending { background:#fef3c7; color:#d97706; }
+  .hm-badge-todo { background:#fee2e2; color:#dc2626; }
+  .hm-footer { text-align:center; padding:32px 20px; color:var(--h-text-muted); font-size:12px; }
+  .hm-footer i { color:var(--rose); }
+
+  @media(max-width:600px) {
+    .hm-hero { padding:32px 16px 24px; }
+    .hm-hero h2 { font-size:20px; }
+    .hm-container { padding:20px 14px 40px; }
+    .hm-day-header { padding:12px 14px; flex-wrap:wrap; }
+    .hm-day-date-group { width:100%; }
+    .hm-summary { grid-template-columns:1fr 1fr; }
+    .hm-item { padding:8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">Dashboard</div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="usage" onclick="switchTab('usage')">DeepSeek</div>
+    <div class="nav-tab" data-tab="honeymoon" onclick="switchTab('honeymoon')">Honeymoon</div>
+    <div class="nav-tab" data-tab="chat" onclick="switchTab('chat')">Chat</div>
+  </div>
+</nav>
+
+<!-- ===== DeepSeek Tab ===== -->
+<div class="tab-content active" id="tab-usage">
+<div class="ds-app">
+  <div class="ds-header">
+    <h2>DeepSeek Usage</h2>
+    <div class="ds-status">
+      <span class="ds-dot" id="dsDot"></span>
+      <span id="dsText">加载中...</span>
+    </div>
+  </div>
+  <div class="ds-error" id="dsError"></div>
+
+  <div class="balance-card">
+    <div class="balance-left">
+      <div class="balance-label">账户余额</div>
+      <div class="balance-value green" id="balVal">--</div>
+      <div class="balance-breakdown" id="balSub"></div>
+    </div>
+    <div style="text-align:right">
+      <div class="balance-label">状态</div>
+      <div style="font-size:18px;font-weight:600;color:var(--green);margin-top:2px" id="balStatus">--</div>
+    </div>
+  </div>
+
+  <div class="section-title" style="font-size:13px;font-weight:600;color:var(--text-s);margin-bottom:12px">今日用量 · 按模型</div>
+  <div class="models-grid" id="modelsGrid">
+    <div style="grid-column:1/-1;text-align:center;padding:28px;color:var(--text-s);font-size:13px">通过代理发请求后自动记录</div>
+  </div>
+
+  <div class="ds-section">
+    <div class="ds-section-title">近 7 天每日 Token 消耗</div>
+    <div class="ds-chart"><canvas id="usageChart"></canvas></div>
+    <div class="ds-note">通过代理转发的请求自动按模型记录</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== Honeymoon Tab ===== -->
+<div class="tab-content" id="tab-honeymoon">
+<div class="hm-hero">
+  <div class="hm-hero-content">
+    <div class="hm-hero-icon">✈</div>
+    <h2>蜜月旅行</h2>
+    <div class="hm-hero-sub">Shanghai · Kuala Lumpur · Bali · Surabaya · Singapore</div>
+    <div class="hm-hero-dates">
+      <span class="hm-hero-date">Jun 16</span>
+      <span class="hm-hero-date">→</span>
+      <span class="hm-hero-date">Jun 25</span>
+    </div>
+  </div>
+</div>
+<div class="hm-container" id="hmContent">
+  <div style="text-align:center;padding:40px;color:var(--h-text-muted)">加载中...</div>
+</div>
+<div class="hm-footer"><i class="fas fa-heart"></i> 蜜月快乐 <i class="fas fa-heart"></i></div>
+</div>
+
+<!-- ===== Chat Tab ===== -->
+<div class="tab-content" id="tab-chat">
+<div class="chat-container">
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-empty" id="chatEmpty">
+      <div class="chat-empty-icon">💬</div>
+      <div class="chat-empty-text">开始一段新对话</div>
+      <div class="chat-empty-hint">输入消息，与 DeepSeek 对话</div>
+    </div>
+  </div>
+  <div class="chat-input-bar">
+    <div class="chat-input-wrap">
+      <textarea id="chatInput" rows="1" placeholder="输入消息..." oninput="autoResizeChat(this)" onkeydown="chatKeydown(event)"></textarea>
+      <div class="chat-input-tools">
+        <select class="chat-model-select" id="chatModel">
+          <option value="deepseek-v4-flash">Flash (快速)</option>
+          <option value="deepseek-v4-pro">Pro (深度)</option>
+        </select>
+        <button class="chat-send-btn" id="chatSend" onclick="sendChat()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// Tab switching
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelector(`.nav-tab[data-tab="${name}"]`).classList.add('active');
+  if (name === 'usage') initUsage();
+  if (name === 'honeymoon' && !window._hmLoaded) loadHoneymoon();
+  if (name === 'chat') initChat();
+}
+
+// === DeepSeek Usage ===
+let chart = null;
+const MODEL_COLORS = { 'deepseek-v4-flash': {bg:'rgba(88,166,255,0.6)',border:'#58a6ff'}, 'deepseek-v4-pro': {bg:'rgba(210,153,29,0.6)',border:'#d2991d'} };
+const MODEL_NAMES = { 'deepseek-v4-flash':'Flash', 'deepseek-v4-pro':'Pro' };
+
+function initUsage() {
+  if (!window._usageInited) { window._usageInited = true; refreshUsage(); setInterval(refreshUsage, 60000); }
+}
+function $(id){return document.getElementById(id)}
+
+async function refreshUsage() {
+  hideErr(); setStatus('loading');
+  try {
+    const [bal, usage] = await Promise.all([fetch('/api/balance').then(r=>r.json()), fetch('/api/usage').then(r=>r.json())]);
+    updateBal(bal); updateModels(usage); updateChart(usage.days||{}); setStatus('ok');
+  } catch(e) { showErr(e.message); setStatus('err'); }
+}
+
+function updateBal(data) {
+  const val=$('balVal'), sub=$('balSub'), st=$('balStatus');
+  if(data.balance_infos?.length>0){
+    const info=data.balance_infos[0], b=parseFloat(info.total_balance);
+    val.textContent=fmtCNY(b); val.className='balance-value'+(b>10?' green':' orange');
+    let p=[]; if(info.topped_up_balance)p.push('充值 '+fmtCNY(info.topped_up_balance));
+    if(info.granted_balance)p.push('赠送 '+fmtCNY(info.granted_balance));
+    sub.textContent=p.join(' · '); st.textContent=data.is_available!==false?'正常':'停用';
+    st.style.color=data.is_available!==false?'var(--green)':'var(--red)';
+  }else if(data.total_balance!=null){val.textContent=fmtCNY(data.total_balance);val.className='balance-value';}
+  else{val.textContent='--';val.className='balance-value';}
+}
+
+function updateModels(usage) {
+  const today=usage.days?.[new Date().toISOString().slice(0,10)]||{};
+  const grid=$('modelsGrid');
+  const ms=new Set();
+  Object.keys(today).forEach(k=>{if(k!=='_total'&&today[k]?.requests)ms.add(k);});
+  usage.models?.names?.forEach(n=>ms.add(n));
+  const models=Array.from(ms).sort();
+  if(!models.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:28px;color:var(--text-s);font-size:13px">暂无数据，通过代理发请求后自动记录</div>';return;}
+  grid.innerHTML=models.map(n=>{
+    const m=today[n]||{}, t=usage.models?.totals?.[n]||{}, c=MODEL_COLORS[n]||{bg:'rgba(139,148,158,0.4)',border:'#8b949e'}, l=MODEL_NAMES[n]||n;
+    return `<div class="model-card"><div class="model-name"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${c.border}"></span>${l}<span class="model-badge">${n.includes('pro')?'深度':'快速'}</span></div>
+    <div class="model-stat"><span class="model-stat-label">今日 Token</span><span class="model-stat-value accent">${fmtNum(m.total_tokens||0)}</span></div>
+    <div class="model-stat"><span class="model-stat-label">今日请求</span><span class="model-stat-value">${(m.requests||0)} 次</span></div>
+    <div class="model-stat"><span class="model-stat-label">今日费用</span><span class="model-stat-value green">${fmtCNY(m.cost||0)}</span></div>
+    <div class="model-stat"><span class="model-stat-label">累计 Token</span><span class="model-stat-value">${fmtNum(t.total_tokens||0)}</span></div>
+    <div class="model-stat"><span class="model-stat-label">累计请求</span><span class="model-stat-value">${(t.requests||0)} 次</span></div></div>`;
+  }).join('');
+}
+
+function updateChart(days) {
+  const labels=[], today=new Date(), md={};
+  for(let i=6;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const k=d.toISOString().slice(0,10);labels.push((d.getMonth()+1)+'/'+d.getDate());Object.keys(days[k]||{}).forEach(k2=>{if(k2!=='_total'&&days[k][k2]?.total_tokens){if(!md[k2])md[k2]=Array(7).fill(0);md[k2][6-i]=days[k][k2].total_tokens;}});}
+  Object.keys(MODEL_COLORS).forEach(k=>{if(!md[k])md[k]=Array(7).fill(0);});
+  const ctx=$('usageChart').getContext('2d'); if(chart)chart.destroy();
+  const ds=Object.keys(md).sort().map(n=>({label:MODEL_NAMES[n]||n,data:md[n],backgroundColor:(MODEL_COLORS[n]||{bg:'rgba(139,148,158,0.4)'}).bg,borderColor:(MODEL_COLORS[n]||{border:'#8b949e'}).border,borderWidth:1,borderRadius:3}));
+  if(!ds.length)ds.push({label:'Token',data:Array(7).fill(0),backgroundColor:'rgba(48,54,61,0.3)',borderColor:'transparent',borderWidth:1,borderRadius:3});
+  chart=new Chart(ctx,{type:'bar',data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'#8b949e',usePointStyle:true,boxWidth:8,padding:16,font:{size:12}}},tooltip:{backgroundColor:'#161b22',borderColor:'#30363d',borderWidth:1,titleColor:'#c9d1d9',bodyColor:'#c9d1d9',callbacks:{label:ctx=>ctx.dataset.label+': '+fmtNum(ctx.parsed.y)+' Token'}}},scales:{x:{stacked:true,ticks:{color:'#8b949e',font:{size:11}},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{color:'#8b949e',font:{size:11},callback:v=>fmtNum(v)},grid:{color:'rgba(48,54,61,0.4)'},title:{display:true,text:'Token',color:'#8b949e',font:{size:11}}}}}});
+}
+
+function fmtCNY(n){return(n==null||isNaN(n))?'--':'¥'+parseFloat(n).toFixed(4);}
+function fmtNum(n){if(n==null||isNaN(n))return'0';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toLocaleString();}
+function showErr(m){const el=$('dsError');el.textContent=m;el.style.display='block';}
+function hideErr(){$('dsError').style.display='none';}
+function setStatus(s){const d=$('dsDot'),t=$('dsText');d.className='ds-dot';if(s==='loading'){d.classList.add('loading');t.textContent='加载中...';}else if(s==='ok'){d.classList.add('ok');t.textContent=new Date().toLocaleTimeString('zh-CN')+' 已更新';}else{d.classList.add('err');t.textContent='加载失败';}}
+
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Save chat history on new messages
+const _origAddChatMsg = addChatMsg;
+addChatMsg = function(role, content, reasoning, usage) {
+  _origAddChatMsg(role, content, reasoning, usage);
+  try { localStorage.setItem('chat_history', JSON.stringify(chatMessages.slice(-50))); } catch(e) {}
+};
+
+// === Honeymoon ===
+let _hmData = null;
+async function loadHoneymoon() {
+  const container = document.getElementById('hmContent');
+  try {
+    const resp = await fetch('/honeymoon.html');
+    const html = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const body = doc.querySelector('.container') || doc.body;
+    const summary = body.querySelector('.hm-summary') || body.querySelector('.summary');
+    const days = body.querySelectorAll('.day');
+    window._hmState = JSON.parse(localStorage.getItem('hm_state') || '{}');
+    let out = '';
+    if (summary) out += summary.outerHTML;
+    days.forEach((d, di) => {
+      const header = d.querySelector('.day-header');
+      const bodyEl = d.querySelector('.day-body');
+      if (header && bodyEl) {
+        const num = header.querySelector('.day-number')?.textContent || '';
+        const date = header.querySelector('.day-date')?.textContent || '';
+        const title = header.querySelector('.day-title')?.textContent || '';
+        const tag = header.querySelector('.day-tag');
+        const tagHTML = tag ? tag.outerHTML : '';
+        const items = bodyEl.querySelectorAll('.item');
+        let itemsHTML = '';
+        items.forEach((item, ii) => {
+          const key = di + '-' + ii;
+          const st = window._hmState[key] || {};
+          const checked = st.checked ? ' checked' : '';
+          const completed = st.checked ? ' completed' : '';
+          const text = st.text || item.querySelector('.item-main')?.innerHTML || '';
+          const sub = item.querySelector('.item-sub')?.textContent || '';
+          const icon = item.querySelector('.item-icon');
+          const iconHTML = icon ? icon.outerHTML : '';
+          const timeText = item.querySelector('.item-time')?.textContent || '';
+          const badgeEl = item.querySelector('.item-badge');
+          const badgeHTML = badgeEl ? badgeEl.outerHTML : '';
+          itemsHTML += `<div class="hm-item${completed}" data-key="${key}">
+            <span class="hm-item-checkbox${checked}" data-key="${key}" onclick="toggleItem(this)">${st.checked ? '✓' : ''}</span>
+            ${iconHTML}
+            <div class="hm-item-content" style="flex:1">
+              <div class="hm-item-main" data-key="${key}" ondblclick="editItem(this)">${text || icon?.nextElementSibling?.querySelector('.item-main')?.innerHTML || ''}</div>
+              ${sub ? '<div class="hm-item-sub">' + sub + '</div>' : ''}
+              ${timeText ? '<span class="item-time" style="font-size:11px;color:var(--h-text-muted)">' + timeText + '</span>' : ''}
+            </div>
+            ${badgeHTML}
+            <span class="hm-item-edit-btn" onclick="editItem(this.parentElement.querySelector('.hm-item-main'))" title="双击编辑">✎</span>
+          </div>`;
+        });
+        out += `<div class="hm-day">
+          <div class="hm-day-header" onclick="this.nextElementSibling.classList.toggle('hm-hidden')">
+            <span class="hm-day-number">${num}</span>
+            <div class="hm-day-date-group">
+              <span class="hm-day-date">${date}</span>
+              <span class="hm-day-title">${title}</span>
+            </div>
+            ${tagHTML}
+          </div>
+          <div class="hm-day-body">${itemsHTML}</div>
+        </div>`;
+      }
+    });
+    out += '<div class="hm-save-note">✓ 点击圆圈切换完成状态 · 双击文字可编辑 · 自动保存</div>';
+    container.innerHTML = out;
+    window._hmLoaded = true;
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--h-text-muted)">加载失败: ' + e.message + '</div>';
+  }
+}
+
+function toggleItem(el) {
+  const key = el.dataset.key;
+  const st = window._hmState[key] = window._hmState[key] || {};
+  st.checked = !st.checked;
+  el.classList.toggle('checked');
+  el.textContent = st.checked ? '✓' : '';
+  el.parentElement.classList.toggle('completed');
+  localStorage.setItem('hm_state', JSON.stringify(window._hmState));
+}
+
+function editItem(el) {
+  if (el.getAttribute('contenteditable') === 'true') return;
+  el.setAttribute('contenteditable', 'true');
+  el.focus();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges(); sel.addRange(range);
+  const save = function() {
+    el.removeAttribute('contenteditable');
+    const key = el.dataset.key;
+    if (key) {
+      const st = window._hmState[key] = window._hmState[key] || {};
+      st.text = el.innerHTML;
+      localStorage.setItem('hm_state', JSON.stringify(window._hmState));
+    }
+    el.removeEventListener('blur', save);
+    document.removeEventListener('click', outsideClick);
+  };
+  const outsideClick = function(e) {
+    if (!el.contains(e.target) && e.target !== el) save();
+  };
+  el.addEventListener('blur', save);
+  setTimeout(() => document.addEventListener('click', outsideClick), 10);
+}
+
+// Init first tab
+switchTab('usage');
+
+// === Chat ===
+let chatMessages = [];
+let chatSending = false;
+
+function autoResizeChat(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; }
+function chatKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }
+
+function addChatMsg(role, content, reasoning, usage) {
+  const container = document.getElementById('chatMessages');
+  const empty = document.getElementById('chatEmpty');
+  if (empty) empty.remove();
+  
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  let html = escapeHtml(content);
+  div.innerHTML = html;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addTypingChat() {
+  const container = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.className = 'chat-typing';
+  el.id = 'chatTyping';
+  el.innerHTML = '<span class="chat-typing-dot"></span><span class="chat-typing-dot"></span><span class="chat-typing-dot"></span>';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTypingChat() {
+  const el = document.getElementById('chatTyping');
+  if (el) el.remove();
+}
+
+async function sendChat() {
+  if (chatSending) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; autoResizeChat(input);
+  document.getElementById('chatSend').disabled = true;
+  chatSending = true;
+
+  addChatMsg('user', text);
+  chatMessages.push({ role: 'user', content: text });
+  addTypingChat();
+
+  try {
+    const model = document.getElementById('chatModel').value;
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, messages: chatMessages.slice(-20), stream: false, max_tokens: 4096 }),
+    });
+    const data = await resp.json();
+    removeTypingChat();
+    if (!resp.ok) throw new Error(data.error?.message || data.msg || 'HTTP ' + resp.status);
+
+    const reply = data.choices?.[0]?.message;
+    if (reply) {
+      addChatMsg('assistant', reply.content || '(empty response)', reply.reasoning_content || '', data.usage);
+      chatMessages.push({ role: 'assistant', content: reply.content || '' });
+    }
+  } catch (err) {
+    removeTypingChat();
+    addChatMsg('assistant', 'Error: ' + escapeHtml(err.message));
+  }
+  document.getElementById('chatSend').disabled = false;
+  chatSending = false;
+}
+
+function initChat() {
+  if (!window._chatInited) {
+    window._chatInited = true;
+    // Load saved messages
+    try {
+      const saved = localStorage.getItem('chat_history');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          chatMessages = parsed.slice(-50);
+          const container = document.getElementById('chatMessages');
+          const empty = document.getElementById('chatEmpty');
+          if (empty) empty.remove();
+          chatMessages.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'chat-msg ' + m.role;
+            div.textContent = m.content;
+            container.appendChild(div);
+          });
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    } catch(e) {}
+  }
+}
+</script>
+</body>
+</html>
+
+  
+  .chat-container { max-width: 860px; margin: 0 auto; padding: 0; display: flex; flex-direction: column; height: calc(100vh - 48px); background: var(--bg); }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .chat-msg { max-width: 78%; padding: 12px 16px; border-radius: 12px; line-height: 1.6; font-size: 14px; word-break: break-word; white-space: pre-wrap; }
+  .chat-msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .chat-msg.assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+  .chat-msg .reasoning-block { background: rgba(255,255,255,0.03); border-left: 2px solid var(--accent); border-radius: 6px; padding: 8px 12px; margin: 8px 0 10px; font-size: 13px; color: var(--text-s); }
+  .chat-msg .reasoning-label { font-size: 10px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+  .chat-msg .reasoning-toggle { font-size: 11px; color: var(--accent); cursor: pointer; user-select: none; margin-top: 2px; display: inline-block; }
+  .chat-msg .reasoning-toggle:hover { text-decoration: underline; }
+  .chat-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-s); gap: 10px; padding: 40px; }
+  .chat-empty-icon { font-size: 40px; opacity: 0.3; }
+  .chat-empty-text { font-size: 14px; }
+  .chat-empty-hint { font-size: 12px; opacity: 0.6; }
+
+  .chat-input-bar { display: flex; align-items: flex-end; gap: 10px; padding: 12px 24px 20px; border-top: 1px solid var(--border); background: var(--bg); }
+  .chat-input-wrap { flex: 1; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2px; }
+  .chat-input-wrap textarea { width: 100%; border: none; background: transparent; color: var(--text); font-size: 14px; padding: 10px 14px; outline: none; resize: none; font-family: inherit; line-height: 1.5; min-height: 44px; max-height: 160px; }
+  .chat-input-wrap textarea::placeholder { color: var(--text-s); }
+  .chat-input-tools { display: flex; align-items: center; justify-content: space-between; padding: 2px 10px 6px; }
+  .chat-model-select { font-size: 12px; background: transparent; color: var(--text-s); border: none; outline: none; cursor: pointer; }
+  .chat-model-select option { background: var(--surface); color: var(--text); }
+  .chat-send-btn { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--accent); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s; }
+  .chat-send-btn:disabled { opacity: 0.35; cursor: default; }
+  .chat-send-btn:hover:not(:disabled) { opacity: 0.9; }
+  .chat-typing { display: flex; align-items: center; gap: 4px; padding: 8px 0; color: var(--text-s); font-size: 13px; align-self: flex-start; }
+  .chat-typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-s); animation: chatBounce 1.2s infinite; }
+  .chat-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .chat-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes chatBounce { 0%,60%,100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
+  .chat-msg-tokens { font-size: 10px; color: var(--text-s); margin-top: 4px; text-align: right; }
+  .chat-msg-time { font-size: 10px; color: var(--text-s); margin-top: 2px; text-align: right; }
+  @media(max-width:640px) { .chat-messages { padding: 12px 14px; } .chat-input-bar { padding: 8px 14px 16px; } .chat-msg { max-width: 92%; } }
