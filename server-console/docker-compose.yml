@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: ./backend
+    container_name: console-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home:/home:ro
+      - /var/log:/var/log:ro
+      - /tmp:/tmp:ro
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: console-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    depends_on:
+      - backend
