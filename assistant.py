@@ -13,7 +13,7 @@ import ssl
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-API_KEY = "sk-1b8beb6163264a649e21cbf2f19d7d64"
+API_KEY = "sk-your-key-here"
 DEEPSEEK = "https://api.deepseek.com"
 PORT = 8871
 TRACKER_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "usage_tracker.json")
